@@ -1,0 +1,25 @@
+{
+  "name": "stock-market-dashboard",
+  "version": "1.0.0",
+  "description": "A simple Vite-powered stock dashboard using Marketstack API and Chart.js.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "vite",
+    "javascript",
+    "chartjs",
+    "marketstack",
+    "stocks"
+  ],
+  "author": "Carl Mata",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
