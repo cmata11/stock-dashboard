@@ -17,9 +17,13 @@
   "author": "Carl Mata",
   "license": "MIT",
   "dependencies": {
-    "chart.js": "^4.4.0"
+    "@supabase/supabase-js": "^2.49.4",
+    "chart.js": "^4.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "vite": "^6.3.5"
   }
 }

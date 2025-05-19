@@ -2,11 +2,13 @@ import './style.css';
 import { renderHome } from './pages/home.js';
 import { renderAbout } from './pages/about.js';
 import { renderStockSearch } from './pages/stock.js';
+import { renderFavorites } from './pages/favorites.js';
 
 const routes = {
   '/': renderHome,
   '/about.html': renderAbout,
   '/stock.html': renderStockSearch,
+  '/favorites.html': renderFavorites,
 };
 
 function render(path = window.location.pathname) {
