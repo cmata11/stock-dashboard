@@ -2,32 +2,41 @@ import Chart from 'chart.js/auto';
 
 export function renderHome() {
   document.getElementById('app').innerHTML = `
-    <h1>Market Overview</h1>
-    <canvas id="marketChart" width="600" height="400"></canvas>
+    <h1>📊 Market Overview</h1>
+    <canvas id="overviewChart" width="600" height="300"></canvas>
   `;
-  fetchMarketData();
+
+  drawMarketChart();
 }
 
-async function fetchMarketData() {
-  const res = await fetch(`https://api.marketstack.com/v1/eod?access_key=61851e5840f68d4a94391f1ee9d9a979&symbols=SPY&limit=10`);
-  const json = await res.json();
-  const data = json.data.reverse();
+async function drawMarketChart() {
+  const symbols = ['AAPL', 'MSFT', 'AMZN'];
+  const apiKey = "61851e5840f68d4a94391f1ee9d9a979";
 
-  const labels = data.map(entry => entry.date.split('T')[0]);
-  const prices = data.map(entry => entry.close);
+  const datasets = await Promise.all(symbols.map(async (symbol) => {
+    const res = await fetch(`https://api.marketstack.com/v1/eod?access_key=${apiKey}&symbols=${symbol}&limit=10`);
+    const json = await res.json();
+    const eod = json.data.reverse();
 
-  const ctx = document.getElementById('marketChart').getContext('2d');
+    return {
+      label: symbol,
+      data: eod.map(d => d.close),
+      borderWidth: 2,
+      fill: false,
+      tension: 0.3
+    };
+  }));
+
+  const labels = (await fetch(`https://api.marketstack.com/v1/eod?access_key=${apiKey}&symbols=AAPL&limit=10`)
+    .then(res => res.json()))
+    .data.reverse().map(d => d.date.split('T')[0]);
+
+  const ctx = document.getElementById('overviewChart').getContext('2d');
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels,
-      datasets: [{
-        label: 'SPY Closing Price',
-        data: prices,
-        borderWidth: 2,
-        fill: false,
-        tension: 0.3
-      }]
+      labels,
+      datasets
     },
     options: {
       responsive: true,

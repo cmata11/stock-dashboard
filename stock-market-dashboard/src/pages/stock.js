@@ -24,13 +24,17 @@ async function searchStock() {
   const apiKey = "61851e5840f68d4a94391f1ee9d9a979";
 
   try {
-    const [tickerRes, eodRes] = await Promise.all([
+    const [tickerRes, eodRes, divRes, splitRes] = await Promise.all([
       fetch(`https://api.marketstack.com/v1/tickers/${ticker}?access_key=${apiKey}`),
-      fetch(`https://api.marketstack.com/v1/eod?access_key=${apiKey}&symbols=${ticker}&limit=1`)
+      fetch(`https://api.marketstack.com/v1/eod?access_key=${apiKey}&symbols=${ticker}&limit=1`),
+      fetch(`https://api.marketstack.com/v1/dividends?access_key=${apiKey}&symbols=${ticker}&limit=1`),
+      fetch(`https://api.marketstack.com/v1/splits?access_key=${apiKey}&symbols=${ticker}&limit=1`)
     ]);
 
     const info = await tickerRes.json();
     const eodData = await eodRes.json();
+    const divData = (await divRes.json()).data?.[0];
+    const splitData = (await splitRes.json()).data?.[0];
 
     if (!info || info.error) {
       output.innerHTML = `<p>❌ Ticker not found. Please check the symbol and try again.</p>`;
@@ -44,38 +48,32 @@ async function searchStock() {
       <p><strong>Exchange:</strong> ${info.stock_exchange.name}</p>
       <p><strong>City:</strong> ${info.stock_exchange.city}</p>
       ${latest ? `<p><strong>Latest Close:</strong> $${latest.close} on ${latest.date.split('T')[0]}</p>` : ""}
+      ${divData ? `<p><strong>Dividend:</strong> $${divData.dividend} on ${divData.date}</p>` : ""}
+      ${splitData ? `<p><strong>Last Split:</strong> ${splitData.split_ratio} on ${splitData.date}</p>` : ""}
       <button id="saveFavorite">⭐ Save to Favorites</button>
     `;
 
-    // ⭐ Save to Favorites
     document.getElementById('saveFavorite').addEventListener('click', async () => {
-      try {
-        // 1. Check for duplicates
-        const favoritesRes = await fetch('http://localhost:3001/api/favorites');
-        const favorites = await favoritesRes.json();
+      const favoritesRes = await fetch('http://localhost:3001/api/favorites');
+      const favorites = await favoritesRes.json();
 
-        if (favorites.some(fav => fav.symbol === info.symbol)) {
-          alert("⚠️ This ticker is already saved.");
-          return;
-        }
-
-        // 2. Save if it's not a duplicate
-        const res = await fetch('http://localhost:3001/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol: info.symbol, name: info.name })
-        });
-
-        const result = await res.json();
-        alert(result.status || "Saved!");
-      } catch (err) {
-        alert("❌ Failed to save to favorites.");
-        console.error(err);
+      if (favorites.some(fav => fav.symbol === info.symbol)) {
+        alert("⚠️ This ticker is already saved.");
+        return;
       }
+
+      const res = await fetch('http://localhost:3001/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: info.symbol, name: info.name })
+      });
+
+      const result = await res.json();
+      alert(result.status || "Saved!");
     });
 
   } catch (err) {
-    output.innerHTML = `<p>⚠️ Error fetching stock data. Please try again later.</p>`;
+    output.innerHTML = `<p>❌ Error loading stock data.</p>`;
     console.error(err);
   }
 }
