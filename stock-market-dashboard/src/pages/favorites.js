@@ -18,7 +18,7 @@ export function renderFavorites() {
 
       list.innerHTML = ''; // Clear loading text
 
-      data.forEach(async (stock, i) => {
+      data.forEach((stock, i) => {
         const section = document.createElement('section');
         section.classList.add('favorite-entry');
         section.innerHTML = `
@@ -30,58 +30,69 @@ export function renderFavorites() {
         `;
         list.appendChild(section);
 
-        // Chart
-        const eodRes = await fetch(`https://api.marketstack.com/v1/eod?access_key=61851e5840f68d4a94391f1ee9d9a979&symbols=${stock.symbol}&limit=10`);
-        const eodJson = await eodRes.json();
-        const eodData = eodJson.data.reverse();
-
-        const labels = eodData.map(d => d.date.split('T')[0]);
-        const prices = eodData.map(d => d.close);
-
-        const ctx = document.getElementById(`chart-${i}`).getContext('2d');
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: `${stock.symbol} Closing Prices`,
-              data: prices,
-              borderWidth: 2,
-              fill: false,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: false
-              }
-            }
-          }
-        });
+        // Load EOD data and render chart
+        loadChart(stock.symbol, i);
       });
 
-      // ✅ Attach delete logic after all buttons are rendered
-      setTimeout(() => {
-        document.querySelectorAll('.deleteBtn').forEach(button => {
-          button.addEventListener('click', async () => {
-            const symbol = button.getAttribute('data-symbol');
-            if (confirm(`Delete ${symbol} from favorites?`)) {
-              const res = await fetch(`http://localhost:3001/api/favorites/${symbol}`, {
-                method: 'DELETE'
-              });
-              const result = await res.json();
-              alert(result.status || "Deleted!");
-              renderFavorites(); // Refresh list
-            }
-          });
-        });
-      }, 500);
+      // Delete button handler
+      list.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('deleteBtn')) {
+          const symbol = e.target.getAttribute('data-symbol');
+          if (confirm(`Delete ${symbol} from favorites?`)) {
+            await fetch(`http://localhost:3001/api/favorites/${symbol}`, {
+              method: 'DELETE'
+            });
+            renderFavorites(); // Reload list
+          }
+        }
+      });
     })
     .catch(err => {
       document.getElementById('favoritesList').innerHTML =
         `<p>❌ Failed to load favorites.</p>`;
       console.error(err);
     });
+}
+
+async function loadChart(symbol, chartId) {
+  try {
+    const res = await fetch(`https://api.marketstack.com/v1/eod?access_key=61851e5840f68d4a94391f1ee9d9a979&symbols=${symbol}&limit=10`);
+    const json = await res.json();
+    const eodData = json.data.reverse();
+
+    if (!eodData || eodData.length === 0) {
+      console.warn(`No EOD data for ${symbol}`);
+      return;
+    }
+
+    const labels = eodData.map(d => d.date.split('T')[0]);
+    const prices = eodData.map(d => d.close);
+
+    const ctx = document.getElementById(`chart-${chartId}`);
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: `${symbol} Closing Prices`,
+            data: prices,
+            borderWidth: 2,
+            borderColor: '#0070f3',
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error(`Chart error for ${symbol}:`, error);
+  }
 }
